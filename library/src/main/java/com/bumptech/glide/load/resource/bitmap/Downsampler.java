@@ -103,6 +103,10 @@ public abstract class Downsampler implements BitmapDecoder<InputStream> {
      */
     @SuppressWarnings("resource")
     // see BitmapDecoder.decode
+    //接下来又到了激动人心的时刻了,重要要解开面纱了，网络流啊，长宽啊，啥都有了
+    //对服务器返回的InputStream的读取，以及对图片的加载全都在这里了。当然这里其实处理了很多的逻辑，包括对图片的压缩，
+    // 甚至还有旋转、圆角等逻辑处理，但是我们目前只需要关注主线逻辑就行了。decode()方法执行之后，会返回一个Bitmap对象，
+    // 那么图片在这里其实也就已经被加载出来了，剩下的工作就是如果让这个Bitmap显示到界面上
     @Override
     public Bitmap decode(InputStream is, BitmapPool pool, int outWidth, int outHeight, DecodeFormat decodeFormat) {
         final ByteArrayPool byteArrayPool = ByteArrayPool.get();

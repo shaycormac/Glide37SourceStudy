@@ -123,9 +123,11 @@ class DecodeJob<A, T, Z> {
      * </p>
      *
      * @throws Exception
+     * 从原始文件解析
      */
     public Resource<Z> decodeFromSource() throws Exception {
         Resource<T> decoded = decodeSource();
+        //上一步得到的是Resource<GifBitmapWrapper>对象，下面这个方法进行解析
         return transformEncodeAndTranscode(decoded);
     }
 
@@ -144,6 +146,7 @@ class DecodeJob<A, T, Z> {
         writeTransformedToCache(transformed);
 
         startTime = LogTime.getLogTime();
+        //解码
         Resource<Z> result = transcode(transformed);
         if (Log.isLoggable(TAG, Log.VERBOSE)) {
             logWithTimeAndKey("Transcoded transformed from source", startTime);
@@ -167,6 +170,8 @@ class DecodeJob<A, T, Z> {
         Resource<T> decoded = null;
         try {
             long startTime = LogTime.getLogTime();
+            //这个fetcher是什么呢？其实就是刚才在onSizeReady()方法中得到的ImageVideoFetcher对象，这里调用它的loadData()方法
+            //这里的A就是ImageWrapper对象
             final A data = fetcher.loadData(priority);
             if (Log.isLoggable(TAG, Log.VERBOSE)) {
                 logWithTimeAndKey("Fetched data", startTime);
@@ -174,6 +179,7 @@ class DecodeJob<A, T, Z> {
             if (isCancelled) {
                 return null;
             }
+            //解码这个对象
             decoded = decodeFromSourceData(data);
         } finally {
             fetcher.cleanup();
@@ -187,6 +193,14 @@ class DecodeJob<A, T, Z> {
             decoded = cacheAndDecodeSourceData(data);
         } else {
             long startTime = LogTime.getLogTime();
+            //在这里调用了解码器去解码。 这里的A就是ImageWrapper对象
+            //loadProvider就是刚才在onSizeReady()方法中得到的FixedLoadProvider，
+            // 而getSourceDecoder()得到的则是一个GifBitmapWrapperResourceDecoder对象，
+            // 也就是要调用这个对象的decode()方法来对图片进行解码，参照实现类。
+            
+            
+            //返回的Resource<GifBitmapWrapper>对象
+            //我们从网络上得到的图片就能够以Resource接口的形式返回，并且还能同时处理Bitmap图片和GIF图片这两种情况
             decoded = loadProvider.getSourceDecoder().decode(data, width, height);
             if (Log.isLoggable(TAG, Log.VERBOSE)) {
                 logWithTimeAndKey("Decoded from source", startTime);
@@ -244,6 +258,9 @@ class DecodeJob<A, T, Z> {
         if (transformed == null) {
             return null;
         }
+        //把Resource<T>对象转换成Resource<Z>对象了
+        //，这里的transcoder其实就是这个GifBitmapWrapperDrawableTranscoder对象
+        //转换成功 Resource<GlideDrawable>对象。然后继续向上返回会回到EngineRunnable的decodeFromSource()方法，再回到decode()方法
         return transcoder.transcode(transformed);
     }
 

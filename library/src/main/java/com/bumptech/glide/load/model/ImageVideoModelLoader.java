@@ -43,7 +43,9 @@ public class ImageVideoModelLoader<A> implements ModelLoader<A, ImageVideoWrappe
             fileDescriptorFetcher = fileDescriptorLoader.getResourceFetcher(model, width, height);
         }
 
-        if (streamFetcher != null || fileDescriptorFetcher != null) {
+        if (streamFetcher != null || fileDescriptorFetcher != null)
+        {
+            //返回这个对象，里面的两个参数是HttpUrlFetcher
             return new ImageVideoFetcher(streamFetcher, fileDescriptorFetcher);
         } else {
             return null;
@@ -67,6 +69,8 @@ public class ImageVideoModelLoader<A> implements ModelLoader<A, ImageVideoWrappe
             InputStream is = null;
             if (streamFetcher != null) {
                 try {
+                    //在ImageVideoFetcher的loadData()方法的第6行，这里又去调用了streamFetcher.loadData()方法，
+                    // 那么这个streamFetcher是什么呢？自然就是刚才在组装ImageVideoFetcher对象时传进来的HttpUrlFetcher
                     is = streamFetcher.loadData(priority);
                 } catch (Exception e) {
                     if (Log.isLoggable(TAG, Log.VERBOSE)) {
@@ -90,6 +94,7 @@ public class ImageVideoModelLoader<A> implements ModelLoader<A, ImageVideoWrappe
                     }
                 }
             }
+            //返回一个imageView的包装类，并把HttpUrlFetcher的inputStream流作为参数扔了进去。
             return new ImageVideoWrapper(is, fileDescriptor);
         }
 

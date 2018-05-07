@@ -46,6 +46,7 @@ public class GlideDrawableImageViewTarget extends ImageViewTarget<GlideDrawable>
      *
      * @param resource {@inheritDoc}
      * @param animation {@inheritDoc}
+     * 看看有什么
      */
     @Override
     public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> animation) {
@@ -63,9 +64,11 @@ public class GlideDrawableImageViewTarget extends ImageViewTarget<GlideDrawable>
                 resource = new SquaringDrawable(resource, view.getWidth());
             }
         }
+        //这里面将会把静止的图片显示在ImageView上
         super.onResourceReady(resource, animation);
         this.resource = resource;
         resource.setLoopCount(maxLoopCount);
+        //如果是gif，就播放
         resource.start();
     }
 
@@ -74,7 +77,8 @@ public class GlideDrawableImageViewTarget extends ImageViewTarget<GlideDrawable>
      * {@link android.widget.ImageView#setImageDrawable(android.graphics.drawable.Drawable)}.
      *
      * @param resource The {@link android.graphics.drawable.Drawable} to display in the view.
-     */
+     */ 
+    //就是这里，最终显示出来了，卧了个槽
     @Override
     protected void setResource(GlideDrawable resource) {
         view.setImageDrawable(resource);

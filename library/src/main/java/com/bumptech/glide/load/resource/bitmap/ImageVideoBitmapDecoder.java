@@ -30,12 +30,16 @@ public class ImageVideoBitmapDecoder implements ResourceDecoder<ImageVideoWrappe
 
     @SuppressWarnings("resource")
     // @see ResourceDecoder.decode
+    //然后我们需要一层层继续向上返回，StreamBitmapDecoder会将值返回到ImageVideoBitmapDecoder当中，
+    // 而ImageVideoBitmapDecoder又会将值返回到GifBitmapWrapperResourceDecoder的decodeBitmapWrapper()方法当中
     @Override
     public Resource<Bitmap> decode(ImageVideoWrapper source, int width, int height) throws IOException {
         Resource<Bitmap> result = null;
+        //获取服务器返回来的InputStream流
         InputStream is = source.getStream();
         if (is != null) {
             try {
+                //streamDecode是一个StreamBitmapDecoder对象
                 result = streamDecoder.decode(is, width, height);
             } catch (IOException e) {
                 if (Log.isLoggable(TAG, Log.VERBOSE)) {

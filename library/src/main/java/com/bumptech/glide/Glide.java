@@ -293,6 +293,7 @@ public class Glide {
         return dataLoadProviderRegistry.get(dataClass, decodedClass);
     }
 
+    //构建出一个Target对象，Target对象则是用来最终展示图片用的，如果我们跟进去的话会看到如下代码
     <R> Target<R> buildImageViewTarget(ImageView imageView, Class<R> transcodedClass) {
         return imageViewTargetFactory.buildTarget(imageView, transcodedClass);
     }
@@ -623,8 +624,10 @@ public class Glide {
      *
      * @param context Any context, will not be retained.
      * @return A RequestManager for the top level application that can be used to start a load.
+     * Glide的重载方法，有好几个
      */
     public static RequestManager with(Context context) {
+        //单例实现。
         RequestManagerRetriever retriever = RequestManagerRetriever.get();
         return retriever.get(context);
     }

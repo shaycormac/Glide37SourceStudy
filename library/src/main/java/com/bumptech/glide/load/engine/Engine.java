@@ -138,6 +138,7 @@ public class Engine implements EngineJobListener,
      * @param <T> The type of data the resource will be decoded from.
      * @param <Z> The type of the resource that will be decoded.
      * @param <R> The type of the resource that will be transcoded from the decoded resource.
+     *           代码有点长，但主要是处理缓存
      */
     public <T, Z, R> LoadStatus load(Key signature, int width, int height, DataFetcher<T> fetcher,
             DataLoadProvider<T, Z> loadProvider, Transformation<Z> transformation, ResourceTranscoder<Z, R> transcoder,
@@ -177,11 +178,16 @@ public class Engine implements EngineJobListener,
             return new LoadStatus(cb, current);
         }
 
+        //2018-05-04 在这里面，构建一个EngineJob，它的主要作用就是用来开启线程的，为后面的异步加载图片做准备
         EngineJob engineJob = engineJobFactory.build(key, isMemoryCacheable);
+        //这个家伙任务繁重。
         DecodeJob<T, Z, R> decodeJob = new DecodeJob<T, Z, R>(key, width, height, fetcher, loadProvider, transformation,
                 transcoder, diskCacheProvider, diskCacheStrategy, priority);
+        //创建了一个EngineRunnable对象，并且在51行调用了EngineJob的start()方法来运行EngineRunnable对象，
+        // 这实际上就是让EngineRunnable的run()方法在子线程当中执行了
         EngineRunnable runnable = new EngineRunnable(engineJob, decodeJob, priority);
         jobs.put(key, engineJob);
+        //添加回调
         engineJob.addCallback(cb);
         engineJob.start(runnable);
 

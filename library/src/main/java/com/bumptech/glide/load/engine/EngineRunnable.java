@@ -55,6 +55,8 @@ class EngineRunnable implements Runnable, Prioritized {
         Exception exception = null;
         Resource<?> resource = null;
         try {
+            //看上去所有的逻辑都应该在这里执行了
+            //我们最终得到了这个Resource<GlideDrawable>对象，那么接下来就是如何将它显示出来了
             resource = decode();
         } catch (Exception e) {
             if (Log.isLoggable(TAG, Log.VERBOSE)) {
@@ -73,6 +75,7 @@ class EngineRunnable implements Runnable, Prioritized {
         if (resource == null) {
             onLoadFailed(exception);
         } else {
+            //表示图片加载已经完成了
             onLoadComplete(resource);
         }
     }
@@ -82,6 +85,7 @@ class EngineRunnable implements Runnable, Prioritized {
     }
 
     private void onLoadComplete(Resource resource) {
+        //这个manager就是EngineJob对象
         manager.onResourceReady(resource);
     }
 
@@ -95,6 +99,7 @@ class EngineRunnable implements Runnable, Prioritized {
     }
 
     private Resource<?> decode() throws Exception {
+        //分两种情况，从缓存还是从原始图片解码
         if (isDecodingFromCache()) {
             return decodeFromCache();
         } else {

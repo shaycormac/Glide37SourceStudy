@@ -420,6 +420,7 @@ public class DrawableRequestBuilder<ModelType>
         return this;
     }
 
+    //返回的是本身，然后这里面有很多方法，可以链式调用，返回都是自身，最后有一个into方法，调用成功
     @Override
     public DrawableRequestBuilder<ModelType> load(ModelType model) {
         super.load(model);
@@ -442,6 +443,8 @@ public class DrawableRequestBuilder<ModelType>
      *
      * @param view {@inheritDoc}
      * @return {@inheritDoc}
+     * 调用into imageView，最后一步，
+     * 里面调用父类的方法
      */
     @Override
     public Target<GlideDrawable> into(ImageView view) {

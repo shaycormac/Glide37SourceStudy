@@ -8,6 +8,9 @@ import com.bumptech.glide.util.Util;
 
 /**
  * A resource wrapping a {@link android.graphics.Bitmap} object.
+ * Bitmap的包装类
+ * BitmapResource的源码也非常简单，经过这样一层包装之后，如果我还需要获取Bitmap，
+ * 只需要调用Resource<Bitmap>的get()方法就可以了
  */
 public class BitmapResource implements Resource<Bitmap> {
     private final Bitmap bitmap;

@@ -279,8 +279,11 @@ public class RequestManager implements LifecycleListener {
      * @see #load(Object)
      *
      * @param string A file path, or a uri or url handled by {@link com.bumptech.glide.load.model.UriLoader}.
+     *               简化使用这个分析，网址字符串往里面扔，
      */
     public DrawableTypeRequest<String> load(String string) {
+        //调用里面的方法 (DrawableTypeRequest<String>) fromString() 返回的是DrawableTypeRequest对象，调用他的load方法，由于本身没有，于是调用
+        //他的父类DrawableRequestBuilder对象的load方法
         return (DrawableTypeRequest<String>) fromString().load(string);
     }
 
@@ -621,6 +624,14 @@ public class RequestManager implements LifecycleListener {
         return loadGeneric(modelClass);
     }
 
+    /**
+     *  根据类的类型来返回啥个屌东西？？
+     *  ModelLoader对象是用于加载图片的，而我们给load()方法传入不同类型的参数，这里也会得到不同的ModelLoader对象
+     *  由于我们刚才传入的参数是String.class，因此最终得到的是StreamStringLoader对象，它是实现了ModelLoader接口的
+     * @param modelClass
+     * @param <T>
+     * @return
+     */
     private <T> DrawableTypeRequest<T> loadGeneric(Class<T> modelClass) {
         ModelLoader<T, InputStream> streamModelLoader = Glide.buildStreamModelLoader(modelClass, context);
         ModelLoader<T, ParcelFileDescriptor> fileDescriptorModelLoader =

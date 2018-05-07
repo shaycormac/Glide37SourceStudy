@@ -42,6 +42,7 @@ public abstract class ImageViewTarget<Z> extends ViewTarget<ImageView, Z> implem
      * {@link android.widget.ImageView#setImageDrawable(android.graphics.drawable.Drawable)}.
      *
      * @param placeholder {@inheritDoc}
+     * 刚开始使用占位图
      */
     @Override
     public void onLoadStarted(Drawable placeholder) {
@@ -53,6 +54,7 @@ public abstract class ImageViewTarget<Z> extends ViewTarget<ImageView, Z> implem
      * {@link android.widget.ImageView#setImageDrawable(android.graphics.drawable.Drawable)}.
      *
      * @param errorDrawable {@inheritDoc}
+     * 直接执行了这个方法，调用ImageView.setImageDrawable
      */
     @Override
     public void onLoadFailed(Exception e, Drawable errorDrawable) {
@@ -73,6 +75,9 @@ public abstract class ImageViewTarget<Z> extends ViewTarget<ImageView, Z> implem
     @Override
     public void onResourceReady(Z resource, GlideAnimation<? super Z> glideAnimation) {
         if (glideAnimation == null || !glideAnimation.animate(resource, this)) {
+            //静态图片的抽象方法，ImageViewTarget的setResource()方法是一个抽象方法，具体的实现还是在子类那边实现的。
+            //那子类的setResource()方法是怎么实现的呢？回头再来看一下GlideDrawableImageViewTarget的setResource()方法，没错，
+            // 调用的view.setImageDrawable()方法，而这个view就是ImageView。代码执行到这里，图片终于也就显示出来了。
             setResource(resource);
         }
     }

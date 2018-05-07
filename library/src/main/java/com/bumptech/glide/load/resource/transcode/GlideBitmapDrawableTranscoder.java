@@ -27,6 +27,7 @@ public class GlideBitmapDrawableTranscoder implements ResourceTranscoder<Bitmap,
         this.bitmapPool = bitmapPool;
     }
 
+    //调用这个方法
     @Override
     public Resource<GlideBitmapDrawable> transcode(Resource<Bitmap> toTranscode) {
         GlideBitmapDrawable drawable = new GlideBitmapDrawable(resources, toTranscode.get());

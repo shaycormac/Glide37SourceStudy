@@ -51,6 +51,7 @@ public class GifBitmapWrapperResourceDecoder implements ResourceDecoder<ImageVid
 
     @SuppressWarnings("resource")
     // @see ResourceDecoder.decode
+    //调用了这个进行解码
     @Override
     public Resource<GifBitmapWrapper> decode(ImageVideoWrapper source, int width, int height) throws IOException {
         ByteArrayPool pool = ByteArrayPool.get();
@@ -58,18 +59,28 @@ public class GifBitmapWrapperResourceDecoder implements ResourceDecoder<ImageVid
 
         GifBitmapWrapper wrapper = null;
         try {
+            //进去看看
             wrapper = decode(source, width, height, tempBytes);
         } finally {
             pool.releaseBytes(tempBytes);
         }
+        //又将GifBitmapWrapper封装到了一个GifBitmapWrapperResource对象当中，
+        // 最终返回的是一个Resource<GifBitmapWrapper>对象。这个GifBitmapWrapperResource和刚才的BitmapResource是相似的，
+        // 它们都实现的Resource接口，都可以通过get()方法来获取封装起来的具体内容
+        
+        //经过这一层的封装之后，我们从网络上得到的图片就能够以Resource接口的形式返回，并且还能同时处理Bitmap图片和GIF图片这两种情况。
         return wrapper != null ? new GifBitmapWrapperResource(wrapper) : null;
     }
 
     private GifBitmapWrapper decode(ImageVideoWrapper source, int width, int height, byte[] bytes) throws IOException {
         final GifBitmapWrapper result;
+        //准备从服务器返回的流当中读取数据。decodeStream()方法中会先从流中读取2个字节的数据，来判断这张图是GIF图还是普通的静图，
+        // 如果是GIF图就调用decodeGifWrapper()方法来进行解码，如果是普通的静图就用调用decodeBitmapWrapper()方法来进行解码。
+        // 这里我们只分析普通静图的实现流程
         if (source.getStream() != null) {
             result = decodeStream(source, width, height, bytes);
         } else {
+            //这里的实现
             result = decodeBitmapWrapper(source, width, height);
         }
         return result;
@@ -117,9 +128,12 @@ public class GifBitmapWrapperResourceDecoder implements ResourceDecoder<ImageVid
 
     private GifBitmapWrapper decodeBitmapWrapper(ImageVideoWrapper toDecode, int width, int height) throws IOException {
         GifBitmapWrapper result = null;
-
+       //这里面调用了静态图的解码
+        //这个bitmapDecoder是一个ImageVideoBitmapDecoder对象
         Resource<Bitmap> bitmapResource = bitmapDecoder.decode(toDecode, width, height);
         if (bitmapResource != null) {
+            //，decodeBitmapWrapper()方法返回的是一个GifBitmapWrapper对象。因此，这里在第5行，
+            // 又将Resource<Bitmap>封装到了一个GifBitmapWrapper对象当中。这个GifBitmapWrapper顾名思义，就是既能封装GIF，又能封装Bitmap，从而保证了不管是什么类型的图片Glide都能从容应对
             result = new GifBitmapWrapper(bitmapResource, null);
         }
 

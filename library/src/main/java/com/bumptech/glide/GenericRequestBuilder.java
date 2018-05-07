@@ -637,6 +637,7 @@ public class GenericRequestBuilder<ModelType, DataType, ResourceType, TranscodeT
      *
      * @param target The target to load the resource into.
      * @return The given target.
+     * 此时Y为GlideDrawableImageViewTarget对象
      */
     public <Y extends Target<TranscodeType>> Y into(Y target) {
         Util.assertMainThread();
@@ -654,10 +655,14 @@ public class GenericRequestBuilder<ModelType, DataType, ResourceType, TranscodeT
             requestTracker.removeRequest(previous);
             previous.recycle();
         }
-
+        //核心 构建一个Request对象
+        //Request是用来发出加载图片请求的，它是Glide中非常关键的一个组件。
+        // 我们先来看buildRequest()方法是如何构建Request对象的：
+        //将之前的load里面的方法封装成一个Request对象，
         Request request = buildRequest(target);
         target.setRequest(request);
         lifecycle.addListener(target);
+        //执行这个Request对象，这也是重点，核心代码
         requestTracker.runRequest(request);
 
         return target;
@@ -673,6 +678,7 @@ public class GenericRequestBuilder<ModelType, DataType, ResourceType, TranscodeT
      * @return The {@link com.bumptech.glide.request.target.Target} used to wrap the given {@link ImageView}.
      */
     public Target<TranscodeType> into(ImageView view) {
+        //强制保证在主线程中执行
         Util.assertMainThread();
         if (view == null) {
             throw new IllegalArgumentException("You must pass in a non null View");
@@ -694,6 +700,8 @@ public class GenericRequestBuilder<ModelType, DataType, ResourceType, TranscodeT
             }
         }
 
+        //最后调用了这句代码，此时transcodeClass为GlideDrawable?
+        //通过glide.buildImageViewTarget()方法，我们构建出了一个GlideDrawableImageViewTarget对象
         return into(glide.buildImageViewTarget(view, transcodeClass));
     }
 
@@ -783,6 +791,7 @@ public class GenericRequestBuilder<ModelType, DataType, ResourceType, TranscodeT
         return result;
     }
 
+    //构建buildRequest对象。
     private Request buildRequest(Target<TranscodeType> target) {
         if (priority == null) {
             priority = Priority.NORMAL;
@@ -829,12 +838,16 @@ public class GenericRequestBuilder<ModelType, DataType, ResourceType, TranscodeT
             return coordinator;
         } else {
             // Base case: no thumbnail.
+            //上面的代码是处理缩略图的，这个是重点，没有缩略图的情况
             return obtainRequest(target, sizeMultiplier, priority, parentCoordinator);
         }
     }
 
+    //这里面有调用了GenericRequest.obtain方法
+    
     private Request obtainRequest(Target<TranscodeType> target, float sizeMultiplier, Priority priority,
             RequestCoordinator requestCoordinator) {
+        //刚才在load()方法中调用的所有API，其实都是在这里组装到Request对象当中
         return GenericRequest.obtain(
                 loadProvider,
                 model,

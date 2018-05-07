@@ -116,6 +116,7 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
         @SuppressWarnings("unchecked")
         GenericRequest<A, T, Z, R> request = (GenericRequest<A, T, Z, R>) REQUEST_POOL.poll();
         if (request == null) {
+            //new 一个Request对象，并在左后返回去
             request = new GenericRequest<A, T, Z, R>();
         }
         request.init(loadProvider,
@@ -256,23 +257,37 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
 
     /**
      * {@inheritDoc}
+     * 分析到Request的请求，具体实现在这里实现，RequestTracker的40行代码 request.begin();
      */
     @Override
     public void begin() {
         startTime = LogTime.getLogTime();
+       /* 这里我们来注意几个细节，首先如果model等于null，model也就是我们在第二步load()方法中传入的图片URL地址，
+        这个时候会调用onException()方法。如果你跟到onException()方法里面去看看，
+        你会发现它最终会调用到一个setErrorPlaceholder()当中*/
         if (model == null) {
             onException(null);
             return;
         }
 
+        //测量ImageView的尺寸
         status = Status.WAITING_FOR_SIZE;
-        if (Util.isValidDimensions(overrideWidth, overrideHeight)) {
+        if (Util.isValidDimensions(overrideWidth, overrideHeight)) 
+        {
+            //指定了加载图片的大小
             onSizeReady(overrideWidth, overrideHeight);
-        } else {
+        } else 
+            {
+                //未指定，即没吊用override(width,height)
+                //ImageView的layout_width和layout_height值做一系列的计算，来算出图片应该的宽高
+                //最后还是调用onSizeReady()
             target.getSize(this);
         }
 
         if (!isComplete() && !isFailed() && canNotifyStatusChanged()) {
+            //先将占位图加在ImageView上。
+            //调用了一个target.onLoadStarted()方法，并传入了一个loading占位图，在也就说，在图片请求开始之前，
+            // 会先使用这张占位图代替最终的图片显示。这也是我们在上一篇文章中学过的placeholder()和error()这两个占位图API底层的实现原理
             target.onLoadStarted(getPlaceholderDrawable());
         }
         if (Log.isLoggable(TAG, Log.VERBOSE)) {
@@ -394,13 +409,17 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
             return;
         }
 
+        //竟然还有个FallbackDrawable方法
         Drawable error = model == null ? getFallbackDrawable() : null;
         if (error == null) {
+            //先获取错误的图片，没有就获取占位图，然后放到ImageView上
           error = getErrorDrawable();
         }
         if (error == null) {
             error = getPlaceholderDrawable();
         }
+        //加载报错的图片
+        //实际上是调用了ImageViewTarget的onLoadFailed方法
         target.onLoadFailed(e, error);
     }
 
@@ -420,6 +439,7 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
 
     /**
      * A callback method that should never be invoked directly.
+     * 这个方法是准备好了ImageView的长宽测量
      */
     @Override
     public void onSizeReady(int width, int height) {
@@ -434,7 +454,11 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
         width = Math.round(sizeMultiplier * width);
         height = Math.round(sizeMultiplier * height);
 
+        //难点和重点 loadProvider，参照DrawableRequest的构造方法
+        //调用了loadProvider的getModelLoader()方法和getTranscoder()方法，
+        // 那么得到的对象也就是刚才我们分析的ImageVideoModelLoader和GifBitmapWrapperDrawableTranscoder了
         ModelLoader<A, T> modelLoader = loadProvider.getModelLoader();
+        //返回一个ImageVideoFetcher对象
         final DataFetcher<T> dataFetcher = modelLoader.getResourceFetcher(model, width, height);
 
         if (dataFetcher == null) {
@@ -446,6 +470,7 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
             logV("finished setup for calling load in " + LogTime.getElapsedMillis(startTime));
         }
         loadedFromMemoryCache = true;
+        //将这么上述的参数放到这个Engine中去，注意最后一个参数，回调是自己，套路
         loadStatus = engine.load(signature, width, height, dataFetcher, loadProvider, transformation, transcoder,
                 priority, isMemoryCacheable, diskCacheStrategy, this);
         loadedFromMemoryCache = resource != null;
@@ -474,6 +499,7 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
 
     /**
      * A callback method that should never be invoked directly.
+     * 屌屌屌，最后回调了自己这边，得到的东西，慢慢刷新UI吧
      */
     @SuppressWarnings("unchecked")
     @Override
@@ -503,7 +529,8 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
             status = Status.COMPLETE;
             return;
         }
-
+//调用resource.get()方法获取到了封装的图片对象，也就是GlideBitmapDrawable对象，或者是GifDrawable对象。
+// 然后将这个值传入到了第二个onResourceReady()方法当中
         onResourceReady(resource, (R) received);
     }
 
@@ -522,6 +549,8 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
         if (requestListener == null || !requestListener.onResourceReady(result, model, target, loadedFromMemoryCache,
                 isFirstResource)) {
             GlideAnimation<R> animation = animationFactory.build(loadedFromMemoryCache, isFirstResource);
+            //这又是重点！！！
+            //而这个Target就是一个GlideDrawableImageViewTarget对象
             target.onResourceReady(result, animation);
         }
 
@@ -545,6 +574,7 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
         status = Status.FAILED;
         //TODO: what if this is a thumbnail request?
         if (requestListener == null || !requestListener.onException(e, model, target, isFirstReadyResource())) {
+            //放置报错的图片
             setErrorPlaceholder(e);
         }
     }

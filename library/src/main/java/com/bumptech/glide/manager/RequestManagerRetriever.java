@@ -62,6 +62,7 @@ public class RequestManagerRetriever implements Handler.Callback {
         handler = new Handler(Looper.getMainLooper(), this /* Callback */);
     }
 
+    //获取一个带有Application生命周期的管理器
     private RequestManager getApplicationManager(Context context) {
         // Either an application context or we're on a background thread.
         if (applicationManager == null) {
@@ -82,8 +83,12 @@ public class RequestManagerRetriever implements Handler.Callback {
     public RequestManager get(Context context) {
         if (context == null) {
             throw new IllegalArgumentException("You cannot start a load on a null Context");
-        } else if (Util.isOnMainThread() && !(context instanceof Application)) {
+        } 
+        //类型判断 ，这是非Application和Application两种情况
+        else if (Util.isOnMainThread() && !(context instanceof Application)) 
+        {
             if (context instanceof FragmentActivity) {
+                //非application方式，添加一个Fragment，感知生命周期
                 return get((FragmentActivity) context);
             } else if (context instanceof Activity) {
                 return get((Activity) context);
@@ -92,15 +97,18 @@ public class RequestManagerRetriever implements Handler.Callback {
             }
         }
 
+        //application方式
         return getApplicationManager(context);
     }
 
     public RequestManager get(FragmentActivity activity) {
+        //不在主线程，就搞个和Application一样的生命周期
         if (Util.isOnBackgroundThread()) {
             return get(activity.getApplicationContext());
         } else {
             assertNotDestroyed(activity);
             FragmentManager fm = activity.getSupportFragmentManager();
+            //都会走到这一步，添加一个隐藏的Fragment
             return supportFragmentGet(activity, fm);
         }
     }
@@ -184,6 +192,7 @@ public class RequestManagerRetriever implements Handler.Callback {
             if (current == null) {
                 current = new SupportRequestManagerFragment();
                 pendingSupportRequestManagerFragments.put(fm, current);
+                //添加一个Fragment
                 fm.beginTransaction().add(current, FRAGMENT_TAG).commitAllowingStateLoss();
                 handler.obtainMessage(ID_REMOVE_SUPPORT_FRAGMENT_MANAGER, fm).sendToTarget();
             }
@@ -191,7 +200,9 @@ public class RequestManagerRetriever implements Handler.Callback {
         return current;
     }
 
-    RequestManager supportFragmentGet(Context context, FragmentManager fm) {
+    //添加隐藏的Fragment
+    RequestManager supportFragmentGet(Context context, FragmentManager fm) 
+    {
         SupportRequestManagerFragment current = getSupportRequestManagerFragment(fm);
         RequestManager requestManager = current.getRequestManager();
         if (requestManager == null) {

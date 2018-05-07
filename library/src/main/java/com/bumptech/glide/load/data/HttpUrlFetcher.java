@@ -39,11 +39,13 @@ public class HttpUrlFetcher implements DataFetcher<InputStream> {
         this.connectionFactory = connectionFactory;
     }
 
+    //执行的方法
     @Override
     public InputStream loadData(Priority priority) throws Exception {
         return loadDataWithRedirects(glideUrl.toURL(), 0 /*redirects*/, null /*lastUrl*/, glideUrl.getHeaders());
     }
-
+//todo 经过一层一层地跋山涉水，我们终于在这里找到网络通讯的代码了，不过也别高兴得太早，现在离最终分析完还早着呢。
+// 可以看到，loadData()方法只是返回了一个InputStream，服务器返回的数据连读都还没开始读呢
     private InputStream loadDataWithRedirects(URL url, int redirects, URL lastUrl, Map<String, String> headers)
             throws IOException {
         if (redirects >= MAXIMUM_REDIRECTS) {
@@ -63,6 +65,7 @@ public class HttpUrlFetcher implements DataFetcher<InputStream> {
         for (Map.Entry<String, String> headerEntry : headers.entrySet()) {
           urlConnection.addRequestProperty(headerEntry.getKey(), headerEntry.getValue());
         }
+        //设置一些链接时间
         urlConnection.setConnectTimeout(2500);
         urlConnection.setReadTimeout(2500);
         urlConnection.setUseCaches(false);
