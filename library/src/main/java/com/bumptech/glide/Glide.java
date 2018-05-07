@@ -139,7 +139,8 @@ public class Glide {
     /**
      * Get the singleton.
      *
-     * @return the singleton
+     * @return the singleton 单例很清楚
+     * 这里主要是自定义的缓存大小，位置读取，从清单文件中，只读一次
      */
     public static Glide get(Context context) {
         if (glide == null) {
@@ -152,6 +153,7 @@ public class Glide {
                     for (GlideModule module : modules) {
                         module.applyOptions(applicationContext, builder);
                     }
+                    //这个方法主要初始化一系列的参数
                     glide = builder.createGlide();
                     for (GlideModule module : modules) {
                         module.registerComponents(applicationContext, glide);
@@ -528,6 +530,7 @@ public class Glide {
      * @param <T> The type of the model.
      * @param <Y> The type of the resource.
      * @return A new {@link ModelLoader} for the given model class.
+     * 创建这个流
      */
     public static <T, Y> ModelLoader<T, Y> buildModelLoader(Class<T> modelClass, Class<Y> resourceClass,
             Context context) {

@@ -146,20 +146,32 @@ public class Engine implements EngineJobListener,
         Util.assertMainThread();
         long startTime = LogTime.getLogTime();
 
+        //这里在第11行调用了fetcher.getId()方法获得了一个id字符串，这个字符串也就是我们要加载的图片的唯一标识，
+        // 比如说如果是一张网络上的图片的话，那么这个id就是这张图片的url地址
         final String id = fetcher.getId();
+        //将这个id连同着signature、width、height等等10个参数一起传入到EngineKeyFactory的buildKey()方法当中，
+        // 从而构建出了一个EngineKey对象，这个EngineKey也就是Glide中的缓存Key
         EngineKey key = keyFactory.buildKey(id, signature, width, height, loadProvider.getCacheDecoder(),
                 loadProvider.getSourceDecoder(), transformation, loadProvider.getEncoder(),
                 transcoder, loadProvider.getSourceEncoder());
-
+        //可见，决定缓存Key的条件非常多，即使你用override()方法改变了一下图片的width或者height，
+        // 也会生成一个完全不同的缓存Key。
+       // EngineKey类的源码大家有兴趣可以自己去看一下，其实主要就是重写了equals()和hashCode()方法，
+        // 保证只有传入EngineKey的所有参数都相同的情况下才认为是同一个EngineKey对象
+       //缓存方法，如果取到，直接返回去
         EngineResource<?> cached = loadFromCache(key, isMemoryCacheable);
-        if (cached != null) {
+        if (cached != null) 
+        {
+            //回调到最后，显示图片，最后回溯到GlideDrawableImageViewTarget，使用setResource方法执行。
             cb.onResourceReady(cached);
             if (Log.isLoggable(TAG, Log.VERBOSE)) {
                 logWithTimeAndKey("Loaded resource from cache", startTime, key);
             }
             return null;
         }
-
+  //第二种内存缓存，采用弱引用的方式
+        //Glide的图片加载过程中会调用两个方法来获取内存缓存，loadFromCache()和loadFromActiveResources()。
+        // 这两个方法中一个使用的就是LruCache算法，另一个使用的就是弱引用
         EngineResource<?> active = loadFromActiveResources(key, isMemoryCacheable);
         if (active != null) {
             cb.onResourceReady(active);
@@ -169,6 +181,7 @@ public class Engine implements EngineJobListener,
             return null;
         }
 
+        //内存缓存没有的话，就从硬盘缓存中取，开启一个线程。
         EngineJob current = jobs.get(key);
         if (current != null) {
             current.addCallback(cb);
@@ -220,14 +233,20 @@ public class Engine implements EngineJobListener,
         return active;
     }
 
+    //第一站，先使用LRUcache算法。
     private EngineResource<?> loadFromCache(Key key, boolean isMemoryCacheable) {
+        //skipMemoryCache()传入为True，就不执行缓存。
         if (!isMemoryCacheable) {
             return null;
         }
-
+//在这个方法中，会使用缓存Key来从cache当中取值，而这里的cache对象就是在构建Glide对象时创建的LruResourceCache，
+// 那么说明这里其实使用的就是LruCache算法
+        //注意，这个方法调用的时候，如果缓存中有的话，就从缓存中干掉，并加到一个弱引用中，表示正在使用的图片
+        //这样的做法，保证正在使用的图片不被LruCache算法干掉
         EngineResource<?> cached = getEngineResourceFromCache(key);
         if (cached != null) {
             cached.acquire();
+            //存到一个弱引用的Map中。
             activeResources.put(key, new ResourceWeakReference(key, cached, getReferenceQueue()));
         }
         return cached;
@@ -266,6 +285,7 @@ public class Engine implements EngineJobListener,
         if (resource != null) {
             resource.setResourceListener(key, this);
 
+            //图片先是存在弱引用的缓存中，此时并没有存到LruCache内存中去
             if (resource.isCacheable()) {
                 activeResources.put(key, new ResourceWeakReference(key, resource, getReferenceQueue()));
             }
@@ -292,6 +312,8 @@ public class Engine implements EngineJobListener,
     @Override
     public void onResourceReleased(Key cacheKey, EngineResource resource) {
         Util.assertMainThread();
+        //首先会将缓存图片从activeResources中移除，然后再将它put到LruResourceCache当中。
+        // 这样也就实现了正在使用中的图片使用弱引用来进行缓存，不在使用中的图片使用LruCache来进行缓存的功能
         activeResources.remove(cacheKey);
         if (resource.isCacheable()) {
             cache.put(cacheKey, resource);

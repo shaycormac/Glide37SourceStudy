@@ -99,17 +99,24 @@ class EngineRunnable implements Runnable, Prioritized {
     }
 
     private Resource<?> decode() throws Exception {
-        //分两种情况，从缓存还是从原始图片解码
+        //分两种情况，从硬盘缓存图片还是从原始图片解码
         if (isDecodingFromCache()) {
+            //从硬盘中找，又分为解码过的和原始图片
             return decodeFromCache();
         } else {
+            //从网络中找图片
             return decodeFromSource();
         }
     }
 
+    //从硬盘缓存中读取
     private Resource<?> decodeFromCache() throws Exception {
         Resource<?> result = null;
         try {
+            //这两个方法的区别其实就是DiskCacheStrategy.RESULT和DiskCacheStrategy.SOURCE这两个参数的区别
+            //尝试从硬盘中的压缩过的图片中读取
+            //它们都是调用了loadFromCache()方法从缓存当中读取数据，如果是decodeResultFromCache()方法就直接将数据解码并返回，
+            // 如果是decodeSourceFromCache()方法，还要调用一下transformEncodeAndTranscode()方法先将数据转换一下再解码并返回
             result = decodeJob.decodeResultFromCache();
         } catch (Exception e) {
             if (Log.isLoggable(TAG, Log.DEBUG)) {
@@ -118,6 +125,7 @@ class EngineRunnable implements Runnable, Prioritized {
         }
 
         if (result == null) {
+            //缓存的原始图片读取
             result = decodeJob.decodeSourceFromCache();
         }
         return result;

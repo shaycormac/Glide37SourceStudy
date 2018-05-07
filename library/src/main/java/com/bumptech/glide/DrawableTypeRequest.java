@@ -105,6 +105,7 @@ public class DrawableTypeRequest<ModelType> extends DrawableRequestBuilder<Model
 
     /**
      * {@inheritDoc}
+     * 用于主线程中下载图片
      */
     public <Y extends Target<File>> Y downloadOnly(Y target) {
         return getDownloadOnlyRequest().downloadOnly(target);
@@ -112,6 +113,7 @@ public class DrawableTypeRequest<ModelType> extends DrawableRequestBuilder<Model
 
     /**
      * {@inheritDoc}
+     * 用于子线程中下载图片
      */
     public FutureTarget<File> downloadOnly(int width, int height) {
         return getDownloadOnlyRequest().downloadOnly(width, height);

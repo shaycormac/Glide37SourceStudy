@@ -185,6 +185,7 @@ public class GlideBuilder {
         }
 
         if (memoryCache == null) {
+            //内存缓存使用的LruCache对象
             memoryCache = new LruResourceCache(calculator.getMemoryCacheSize());
         }
 

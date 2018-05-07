@@ -401,6 +401,8 @@ public class BitmapRequestBuilder<ModelType, TranscodeType>
 
     /**
      * {@inheritDoc}
+     * 对下载监听的回调
+     * 返回false表示啥也不做，返回true，表示已经处理事件，不会再往下传递
      */
     @Override
     public BitmapRequestBuilder<ModelType, TranscodeType> listener(

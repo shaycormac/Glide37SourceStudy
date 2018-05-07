@@ -546,11 +546,13 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
         status = Status.COMPLETE;
         this.resource = resource;
 
+        //注意！！requestListener 就是listener()的监听，如果返回true，就不走这里面的逻辑了。
         if (requestListener == null || !requestListener.onResourceReady(result, model, target, loadedFromMemoryCache,
                 isFirstResource)) {
             GlideAnimation<R> animation = animationFactory.build(loadedFromMemoryCache, isFirstResource);
             //这又是重点！！！
             //而这个Target就是一个GlideDrawableImageViewTarget对象
+            //在这里回调，表示加载成功
             target.onResourceReady(result, animation);
         }
 
@@ -573,6 +575,9 @@ public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallb
 
         status = Status.FAILED;
         //TODO: what if this is a thumbnail request?
+        //同理，只要requestListener返回true,也不会走下面的逻辑，这就是listener的原理。
+        //只有在onException()方法返回false的情况下才会继续调用setErrorPlaceholder()方法。也就是说，
+        // 如果我们在onException()方法中返回了true，那么Glide请求中使用error(int resourceId)方法设置的异常占位图就失效了
         if (requestListener == null || !requestListener.onException(e, model, target, isFirstReadyResource())) {
             //放置报错的图片
             setErrorPlaceholder(e);

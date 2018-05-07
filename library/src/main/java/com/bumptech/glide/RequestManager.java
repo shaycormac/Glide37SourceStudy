@@ -633,6 +633,7 @@ public class RequestManager implements LifecycleListener {
      * @return
      */
     private <T> DrawableTypeRequest<T> loadGeneric(Class<T> modelClass) {
+        //创建ModelLoader流
         ModelLoader<T, InputStream> streamModelLoader = Glide.buildStreamModelLoader(modelClass, context);
         ModelLoader<T, ParcelFileDescriptor> fileDescriptorModelLoader =
                 Glide.buildFileDescriptorModelLoader(modelClass, context);

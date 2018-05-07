@@ -766,6 +766,7 @@ public class GenericRequestBuilder<ModelType, DataType, ResourceType, TranscodeT
      *
      * @return A {@link Target} that can be used to cancel the load via
      *        {@link Glide#clear(com.bumptech.glide.request.target.Target)}.
+     *        图片的预加载过程
      */
     public Target<TranscodeType> preload() {
         return preload(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL);

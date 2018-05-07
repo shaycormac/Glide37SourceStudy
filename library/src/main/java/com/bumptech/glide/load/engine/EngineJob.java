@@ -138,6 +138,7 @@ class EngineJob implements EngineRunnable.EngineRunnableManager {
         MAIN_THREAD_HANDLER.obtainMessage(MSG_COMPLETE, this).sendToTarget();
     }
 
+    //图片应该是先缓存后，然后在显示在控件上的。看下面代码即可得知。
     private void handleResultOnMainThread() {
         if (isCancelled) {
             resource.recycle();
@@ -150,7 +151,10 @@ class EngineJob implements EngineRunnable.EngineRunnableManager {
 
         // Hold on to resource for duration of request so we don't recycle it in the middle of notifying if it
         // synchronously released by one of the callbacks.
+        //EngineResource是用一个acquired变量用来记录图片被引用的次数，调用acquire()方法会让变量加1，
+        // 调用release()方法会让变量减1
         engineResource.acquire();
+        //图片缓存的地方,这个Listener是Engine,实现方法是存到弱引用的hashMap中
         listener.onEngineJobComplete(key, engineResource);
 //后在第72行调用了handleResultOnMainThread()方法，这个方法中又通过一个循环，调用了所有ResourceCallback的
 // onResourceReady()方法。
@@ -160,7 +164,7 @@ class EngineJob implements EngineRunnable.EngineRunnableManager {
         for (ResourceCallback cb : cbs) {
             if (!isInIgnoredCallbacks(cb)) {
                 engineResource.acquire();
-                //回调
+                //回调，最终辗转反侧显示图片
                 cb.onResourceReady(engineResource);
             }
         }

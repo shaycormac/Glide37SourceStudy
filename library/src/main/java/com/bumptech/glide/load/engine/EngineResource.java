@@ -9,6 +9,8 @@ import com.bumptech.glide.load.Key;
  * interface.
  *
  * @param <Z> The type of data returned by the wrapped {@link Resource}.
+ *           这个屌类是用一个acquired变量用来记录图片被引用的次数，调用acquire()方法会让变量加1，
+ *           调用release()方法会让变量减1
  */
 class EngineResource<Z> implements Resource<Z> {
     private final Resource<Z> resource;
@@ -96,6 +98,12 @@ class EngineResource<Z> implements Resource<Z> {
         if (!Looper.getMainLooper().equals(Looper.myLooper())) {
             throw new IllegalThreadStateException("Must call release on the main thread");
         }
+        //当acquired变量大于0的时候，说明图片正在使用中，也就应该放到activeResources弱引用缓存当中。
+        // 而经过release()之后，如果acquired变量等于0了，说明图片已经不再被使用了，
+        // 那么此时会在第24行调用listener的onResourceReleased()方法来释放资源，这个listener就是Engine对象
+        //--acquired == 0  等价于
+        // --acquired；
+        //acquired==0；
         if (--acquired == 0) {
             listener.onResourceReleased(key, this);
         }

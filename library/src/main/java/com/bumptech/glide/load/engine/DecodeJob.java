@@ -126,8 +126,10 @@ class DecodeJob<A, T, Z> {
      * 从原始文件解析
      */
     public Resource<Z> decodeFromSource() throws Exception {
+        //decodeSource()顾名思义是用来解析原图片的
         Resource<T> decoded = decodeSource();
         //上一步得到的是Resource<GifBitmapWrapper>对象，下面这个方法进行解析
+        //而transformEncodeAndTranscode()则是用来对图片进行转换和转码的
         return transformEncodeAndTranscode(decoded);
     }
 
@@ -138,11 +140,13 @@ class DecodeJob<A, T, Z> {
 
     private Resource<Z> transformEncodeAndTranscode(Resource<T> decoded) {
         long startTime = LogTime.getLogTime();
+        //调用transform()方法来对图片进行转换
         Resource<T> transformed = transform(decoded);
         if (Log.isLoggable(TAG, Log.VERBOSE)) {
             logWithTimeAndKey("Transformed resource from source", startTime);
         }
 
+        //转换过后的图片写入到硬盘缓存中,调用的同样是DiskLruCache实例的put()方法，不过这里用的缓存Key是resultKey。
         writeTransformedToCache(transformed);
 
         startTime = LogTime.getLogTime();
@@ -189,7 +193,9 @@ class DecodeJob<A, T, Z> {
 
     private Resource<T> decodeFromSourceData(A data) throws IOException {
         final Resource<T> decoded;
+        //是否允许缓存原始图片
         if (diskCacheStrategy.cacheSource()) {
+            //将原始图片进行缓存
             decoded = cacheAndDecodeSourceData(data);
         } else {
             long startTime = LogTime.getLogTime();
@@ -211,13 +217,16 @@ class DecodeJob<A, T, Z> {
 
     private Resource<T> cacheAndDecodeSourceData(A data) throws IOException {
         long startTime = LogTime.getLogTime();
+        //方法中同样调用了getDiskCache()方法来获取DiskLruCache实例，接着调用它的put()方法就可以写入硬盘缓存了，
         SourceWriter<A> writer = new SourceWriter<A>(loadProvider.getSourceEncoder(), data);
+        // 注意原始图片的缓存Key是用的resultKey.getOriginalKey()
         diskCacheProvider.getDiskCache().put(resultKey.getOriginalKey(), writer);
         if (Log.isLoggable(TAG, Log.VERBOSE)) {
             logWithTimeAndKey("Wrote source to cache", startTime);
         }
 
         startTime = LogTime.getLogTime();
+        //然后再取出来返回去。
         Resource<T> result = loadFromCache(resultKey.getOriginalKey());
         if (Log.isLoggable(TAG, Log.VERBOSE) && result != null) {
             logWithTimeAndKey("Decoded source from cache", startTime);
@@ -225,6 +234,10 @@ class DecodeJob<A, T, Z> {
         return result;
     }
 
+    //调用getDiskCache()方法获取到的就是Glide自己编写的DiskLruCache工具类的实例，然后调用它的get()方法并把缓存Key传入
+    // ，就能得到硬盘缓存的文件了。如果文件为空就返回null，如果文件不为空则将它解码成Resource对象后返回即可。
+    //而key 原始图片其实也就相当于url，有大小的是resultKey,不一样哦
+    //解决了查找，再去看看在哪储存的。
     private Resource<T> loadFromCache(Key key) throws IOException {
         File cacheFile = diskCacheProvider.getDiskCache().get(key);
         if (cacheFile == null) {
@@ -233,6 +246,7 @@ class DecodeJob<A, T, Z> {
 
         Resource<T> result = null;
         try {
+            //将硬盘中的文件解码变成资源返回去
             result = loadProvider.getCacheDecoder().decode(cacheFile, width, height);
         } finally {
             if (result == null) {

@@ -156,6 +156,11 @@ public class RequestFutureTarget<T, R> implements FutureTarget<R>, Runnable {
     /**
      * A callback that should never be invoked directly.
      */
+    //那么现在线程被阻塞住了，什么时候才能恢复呢？答案在onResourceReady()方法中。可以看到，
+    // onResourceReady()方法中只有三行代码，第一行把resultReceived赋值成true，说明图片文件已经下载好了，
+    // 这样下次再调用get()方法时就不会再阻塞线程，而是可以直接将结果返回。
+    // 第二行把下载好的图片文件赋值到一个全局的resource变量上面，这样doGet()方法就也可以访问到它。
+    // 第三行notifyAll一下，通知所有wait的线程取消阻塞，这个时候图片文件已经下载好了，因此doGet()方法也就可以返回结果了
     @Override
     public synchronized void onResourceReady(R resource, GlideAnimation<? super R> glideAnimation) {
         // We might get a null result.
@@ -176,8 +181,11 @@ public class RequestFutureTarget<T, R> implements FutureTarget<R>, Runnable {
         } else if (resultReceived) {
             return resource;
         }
-
+//进入到一个wait()当中，把当前线程给阻塞住，从而阻止代码继续往下执行。
+// 这也是为什么downloadOnly(int width, int height)方法要求必须在子线程当中使用
         if (timeoutMillis == null) {
+            //阻塞线程
+            //所以 因为它会对当前线程进行阻塞，如果在主线程当中使用的话，那么就会让主线程卡死，从而用户无法进行任何其他操作
             waiter.waitForTimeout(this, 0);
         } else if (timeoutMillis > 0) {
             waiter.waitForTimeout(this, timeoutMillis);
