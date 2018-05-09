@@ -173,6 +173,7 @@ public class DrawableRequestBuilder<ModelType>
      * @see #transform(com.bumptech.glide.load.Transformation[])
      *
      * @return This request builder.
+     * Glide自带的图片转换效果，默认使用自适应的图片会取中心，然后占满全屏。
      */
     @SuppressWarnings("unchecked")
     public DrawableRequestBuilder<ModelType> centerCrop() {
@@ -188,6 +189,7 @@ public class DrawableRequestBuilder<ModelType>
      * @see #transform(com.bumptech.glide.load.Transformation[])
      *
      * @return This request builder.
+     * Glide自带的图片转换效果，会将原始图片按照分辨率，充满全屏
      */
     @SuppressWarnings("unchecked")
     public DrawableRequestBuilder<ModelType> fitCenter() {

@@ -14,6 +14,7 @@ import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool;
 
 /**
  * A class with methods to efficiently resize Bitmaps.
+ * 高效的转换图片？？
  */
 public final class TransformationUtils {
     private static final String TAG = "TransformationUtils";
@@ -34,14 +35,17 @@ public final class TransformationUtils {
      * @param width The width in pixels of the final Bitmap.
      * @param height The height in pixels of the final Bitmap.
      * @return The resized Bitmap (will be recycled if recycled is not null).
+     * 这段代码就是整个图片变换功能的核心代码了
      */
     public static Bitmap centerCrop(Bitmap recycled, Bitmap toCrop, int width, int height) {
+        //如果要转换的图片和原始的图片一样，啥也不干！
         if (toCrop == null) {
             return null;
         } else if (toCrop.getWidth() == width && toCrop.getHeight() == height) {
             return toCrop;
         }
         // From ImageView/Bitmap.createScaledBitmap.
+        //数学计算来算出画布的缩放的比例以及偏移值,到 m.postTranslate((为止
         final float scale;
         float dx = 0, dy = 0;
         Matrix m = new Matrix();
@@ -55,6 +59,7 @@ public final class TransformationUtils {
 
         m.setScale(scale, scale);
         m.postTranslate((int) (dx + 0.5f), (int) (dy + 0.5f));
+        //判断缓存池中取出的Bitmap对象是否为空，如果不为空就可以直接使用，如果为空则要创建一个新的Bitmap对象
         final Bitmap result;
         if (recycled != null) {
             result = recycled;
@@ -63,11 +68,16 @@ public final class TransformationUtils {
         }
 
         // We don't add or remove alpha, so keep the alpha setting of the Bitmap we were given.
+        //将原图Bitmap对象的alpha值复制到裁剪Bitmap对象上面
         TransformationUtils.setAlpha(toCrop, result);
-
+//裁剪Bitmap对象进行绘制，并将最终的结果进行返回
+        //画布带上一个空的图片result
         Canvas canvas = new Canvas(result);
+        //画笔
         Paint paint = new Paint(PAINT_FLAGS);
+        //在画布上（已经有白纸了），把原图用画笔以及缩放画布，画出来
         canvas.drawBitmap(toCrop, m, paint);
+        //返回这个画好的图片。
         return result;
     }
 
@@ -81,37 +91,44 @@ public final class TransformationUtils {
      * @param height The height in pixels the final image will fit within.
      * @return A new Bitmap shrunk to fit within the given dimensions, or toFit if toFit's width or height matches the
      * given dimensions and toFit fits within the given dimensions
+     * 默认的图片转换效果。
      */
     public static Bitmap fitCenter(Bitmap toFit, BitmapPool pool, int width, int height) {
-        if (toFit.getWidth() == width && toFit.getHeight() == height) {
+        //如果需要裁剪的尺寸和原图一样大小，那就没必要裁剪了。直接返回原图
+        if (toFit.getWidth() == width && toFit.getHeight() == height) 
+        {
             if (Log.isLoggable(TAG, Log.VERBOSE)) {
                 Log.v(TAG, "requested target size matches input, returning input");
             }
             return toFit;
         }
+        //需要的宽高和实际图片的宽高取值
         final float widthPercentage = width / (float) toFit.getWidth();
         final float heightPercentage = height / (float) toFit.getHeight();
+        //取两者的最小值，理解就是保持充满屏幕的前提下，比例不失真，取小的。
         final float minPercentage = Math.min(widthPercentage, heightPercentage);
 
         // take the floor of the target width/height, not round. If the matrix
         // passed into drawBitmap rounds differently, we want to slightly
         // overdraw, not underdraw, to avoid artifacts from bitmap reuse.
+        //然后拿这个值去和图片的宽高相乘，得到目标的宽高
         final int targetWidth = (int) (minPercentage * toFit.getWidth());
         final int targetHeight = (int) (minPercentage * toFit.getHeight());
-
+       //如果一样的，啥也不做（正方形就可能存在这种情况）
         if (toFit.getWidth() == targetWidth && toFit.getHeight() == targetHeight) {
             if (Log.isLoggable(TAG, Log.VERBOSE)) {
                 Log.v(TAG, "adjusted target size matches input, returning input");
             }
             return toFit;
         }
-
+       //去图片缓存池中取可以复用的图片（大小相同）
         Bitmap.Config config = getSafeConfig(toFit);
         Bitmap toReuse = pool.get(targetWidth, targetHeight, config);
         if (toReuse == null) {
             toReuse = Bitmap.createBitmap(targetWidth, targetHeight, config);
         }
         // We don't add or remove alpha, so keep the alpha setting of the Bitmap we were given.
+        //将原来的图片透明度给所用的图片
         TransformationUtils.setAlpha(toFit, toReuse);
 
         if (Log.isLoggable(TAG, Log.VERBOSE)) {
@@ -120,13 +137,16 @@ public final class TransformationUtils {
             Log.v(TAG, "toReuse: " + toReuse.getWidth() + "x" + toReuse.getHeight());
             Log.v(TAG, "minPct:   " + minPercentage);
         }
-
+       //同上了，首先仙剑一个画布，带上这个白纸
         Canvas canvas = new Canvas(toReuse);
+        //对画布进行缩放
         Matrix matrix = new Matrix();
         matrix.setScale(minPercentage, minPercentage);
+        //画笔
         Paint paint = new Paint(PAINT_FLAGS);
+        //在画布上（已经有toReuse这张白纸了），通过画布的缩放进行画这个图
         canvas.drawBitmap(toFit, matrix, paint);
-
+        //返回这个图
         return toReuse;
     }
 

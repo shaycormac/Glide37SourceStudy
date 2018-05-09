@@ -165,8 +165,12 @@ public class GlideBuilder {
         return this;
     }
 
+    //开启各种线程池
+    //这个方法中会创建BitmapPool、MemoryCache、DiskCache、DecodeFormat等对象的实例，
+    // 并在最后一行创建一个Glide对象的实例，然后将前面创建的这些实例传入到Glide对象当中，以供后续的图片加载操作使用
     Glide createGlide() {
-        if (sourceService == null) {
+        if (sourceService == null) 
+        {
             final int cores = Math.max(1, Runtime.getRuntime().availableProcessors());
             sourceService = new FifoPriorityThreadPoolExecutor(cores);
         }

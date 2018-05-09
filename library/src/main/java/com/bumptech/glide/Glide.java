@@ -147,6 +147,7 @@ public class Glide {
             synchronized (Glide.class) {
                 if (glide == null) {
                     Context applicationContext = context.getApplicationContext();
+                    //ManifestParser的parse()方法去解析AndroidManifest.xml文件中的配置
                     List<GlideModule> modules = new ManifestParser(applicationContext).parse();
 
                     GlideBuilder builder = new GlideBuilder(applicationContext);
@@ -154,6 +155,7 @@ public class Glide {
                         module.applyOptions(applicationContext, builder);
                     }
                     //这个方法主要初始化一系列的参数
+                    //GlideBuilder的createGlide()方法，并返回了一个Glide对象。也就是说，Glide对象的实例就是在这里创建
                     glide = builder.createGlide();
                     for (GlideModule module : modules) {
                         module.registerComponents(applicationContext, glide);

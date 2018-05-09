@@ -68,8 +68,8 @@ public class GifDrawable extends GlideDrawable implements GifFrameLoader.FrameCa
      * @param firstFrame The decoded and transformed first frame of this gif.
      */
     public GifDrawable(Context context, GifDecoder.BitmapProvider bitmapProvider, BitmapPool bitmapPool,
-            Transformation<Bitmap> frameTransformation, int targetFrameWidth, int targetFrameHeight,
-            GifHeader gifHeader, byte[] data, Bitmap firstFrame) {
+                       Transformation<Bitmap> frameTransformation, int targetFrameWidth, int targetFrameHeight,
+                       GifHeader gifHeader, byte[] data, Bitmap firstFrame) {
         this(new GifState(gifHeader, data, context, frameTransformation, targetFrameWidth, targetFrameHeight,
                 bitmapProvider, bitmapPool, firstFrame));
     }

@@ -683,12 +683,14 @@ public class GenericRequestBuilder<ModelType, DataType, ResourceType, TranscodeT
         if (view == null) {
             throw new IllegalArgumentException("You must pass in a non null View");
         }
-
+        //ImageView默认的ScaleType是fitCenter
         if (!isTransformationSet && view.getScaleType() != null) {
             switch (view.getScaleType()) {
                 case CENTER_CROP:
                     applyCenterCrop();
                     break;
+                    //ImageView默认的scaleType是FIT_CENTER，因此会自动添加一个FitCenter的图片变换，
+                // 而在这个图片变换过程中做了某些操作，导致图片充满了全屏
                 case FIT_CENTER:
                 case FIT_START:
                 case FIT_END:
