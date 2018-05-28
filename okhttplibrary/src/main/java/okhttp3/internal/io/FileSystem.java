@@ -37,6 +37,7 @@ import okio.Source;
  * information. In exchange for these limitations, this interface is easier to implement and works
  * on all versions of Java and Android.
  */
+//FileSystem是一个接口，里面有一个他的实现类SYSTEM.所以可以FileSystem看成okhttp中文件系统对okio的桥接管理类
 public interface FileSystem {
   /** The host machine's local file system. */
   FileSystem SYSTEM = new FileSystem() {

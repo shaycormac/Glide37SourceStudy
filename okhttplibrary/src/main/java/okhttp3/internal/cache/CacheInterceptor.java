@@ -49,13 +49,13 @@ public final class CacheInterceptor implements Interceptor {
     this.cache = cache;
   }
 
+  //缓存的责任链。
   @Override public Response intercept(Chain chain) throws IOException {
-    Response cacheCandidate = cache != null
-        ? cache.get(chain.request())
-        : null;
+    //如果存在缓存，则从缓存中取出，有可能为null
+    Response cacheCandidate = cache != null ? cache.get(chain.request()) : null;
 
     long now = System.currentTimeMillis();
-
+//获取缓存策略对象
     CacheStrategy strategy = new CacheStrategy.Factory(now, chain.request(), cacheCandidate).get();
     Request networkRequest = strategy.networkRequest;
     Response cacheResponse = strategy.cacheResponse;
@@ -70,6 +70,7 @@ public final class CacheInterceptor implements Interceptor {
 
     // If we're forbidden from using the network and the cache is insufficient, fail.
     if (networkRequest == null && cacheResponse == null) {
+      //返回的话，就不会继续执行下面的责任链东西了
       return new Response.Builder()
           .request(chain.request())
           .protocol(Protocol.HTTP_1_1)
@@ -90,6 +91,7 @@ public final class CacheInterceptor implements Interceptor {
 
     Response networkResponse = null;
     try {
+      //再次回到RealInterceptorChain中，然后责任链再次调到ConnectInterceptor中
       networkResponse = chain.proceed(networkRequest);
     } finally {
       // If we're crashing on I/O or otherwise, don't leak the cache body.

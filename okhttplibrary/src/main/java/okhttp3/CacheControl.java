@@ -11,11 +11,14 @@ import okhttp3.internal.http.HttpHeaders;
  * on what responses can be stored, and which requests can be satisfied by those stored responses.
  *
  * <p>See <a href="https://tools.ietf.org/html/rfc7234#section-5.2">RFC 7234, 5.2</a>.
+ * 缓存的类
  */
 public final class CacheControl {
   /**
    * Cache control request directives that require network validation of responses. Note that such
    * requests may be assisted by the cache via conditional GET requests.
+   * CacheControl中提供了两个常用的于修饰请求，FORCE_CACHE表示只使用缓存中的响应，哪怕这个缓存过期了，
+   * FORCE_NETWORK这个表示只能使用网络响应
    */
   public static final CacheControl FORCE_NETWORK = new Builder().noCache().build();
 

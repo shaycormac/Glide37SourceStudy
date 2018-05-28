@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -12,6 +13,9 @@ import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okio.BufferedSource;
+import okio.Okio;
+import okio.Source;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -86,7 +90,22 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
-        
+    }
+    //okio的操作
+    //Okio是对Java底层io的封装，所以底层io能做的Okio都能做。
+    /**
+     *
+     * 第一步，首先是调用okio的source(InputStream in)方法获取Source对象
+     第二步，调用okio的buffer(Source source)方法获取BufferedSource对象
+     第三步，调用BufferedSource的readUtf8()方法读取String对象
+     第四步，关闭BufferedSource
+     
+     */
+    public static void readString(InputStream in) throws IOException {
+        Source source = Okio.source(in);
+        BufferedSource bufferedSource = Okio.buffer(source);
+        String s = bufferedSource.readUtf8(); //以UTF-8读
+        System.out.println(s);
+        bufferedSource.close();
     }
 }

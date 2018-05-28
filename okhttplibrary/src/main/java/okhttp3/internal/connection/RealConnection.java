@@ -75,6 +75,11 @@ import static java.net.HttpURLConnection.HTTP_PROXY_AUTH;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static okhttp3.internal.Util.closeQuietly;
 
+//这里面有网络连接的三次握手
+//RealConnection是Connection的实现类，代表着链接socket的链路，如果拥有了一个RealConnection就代表了我们已经跟服务器有了一条通信链路，而且通过
+//RealConnection代表是连接socket链路，RealConnection对象意味着我们已经跟服务端有了一条通信链路了。
+// 很多朋友这时候会想到，有通信链路了，是不是与意味着在这个类实现的三次握手，你们猜对了，的确是在这个类里面实现的三次握手
+
 public final class RealConnection extends Http2Connection.Listener implements Connection {
   private static final String NPE_THROW_WITH_NULL = "throw with null exception";
   private static final int MAX_TUNNEL_ATTEMPTS = 21;
@@ -83,18 +88,22 @@ public final class RealConnection extends Http2Connection.Listener implements Co
   private final Route route;
 
   // The fields below are initialized by connect() and never reassigned.
-
+  //下面这些字段，通过connect()方法开始初始化，并且绝对不会再次赋值
   /** The low-level TCP socket. */
-  private Socket rawSocket;
+  private Socket rawSocket;//底层socket
 
   /**
    * The application layer socket. Either an {@link SSLSocket} layered over {@link #rawSocket}, or
    * {@link #rawSocket} itself if this connection does not use SSL.
    */
-  private Socket socket;
+  private Socket socket;//应用层socket
+  //握手
   private Handshake handshake;
+  //协议
   private Protocol protocol;
+  // http2的链接
   private Http2Connection http2Connection;
+  //通过source和sink，大家可以猜到是与服务器交互的输入输出流
   private BufferedSource source;
   private BufferedSink sink;
 
@@ -102,13 +111,14 @@ public final class RealConnection extends Http2Connection.Listener implements Co
 
   /** If true, no new streams can be created on this connection. Once true this is always true. */
   public boolean noNewStreams;
-
+  //成功的次数
   public int successCount;
 
   /**
    * The maximum number of concurrent streams that can be carried by this connection. If {@code
    * allocations.size() < allocationLimit} then new streams can be created on this connection.
    */
+  //此链接可以承载最大并发流的限制，如果不超过限制，可以随意增加
   public int allocationLimit = 1;
 
   /** Current streams carried by this connection. */
@@ -130,6 +140,7 @@ public final class RealConnection extends Http2Connection.Listener implements Co
     return result;
   }
 
+  //三次握手的实现地方
   public void connect(int connectTimeout, int readTimeout, int writeTimeout,
       int pingIntervalMillis, boolean connectionRetryEnabled, Call call,
       EventListener eventListener) {
@@ -155,18 +166,24 @@ public final class RealConnection extends Http2Connection.Listener implements Co
             "H2_PRIOR_KNOWLEDGE cannot be used with HTTPS"));
       }
     }
-
-    while (true) {
+// 连接开始，死循环
+    while (true) 
+    {
       try {
-        if (route.requiresTunnel()) {
+        // 如果要求隧道模式，建立通道连接，通常不是这种
+        if (route.requiresTunnel()) 
+        {
           connectTunnel(connectTimeout, readTimeout, writeTimeout, call, eventListener);
           if (rawSocket == null) {
             // We were unable to connect the tunnel but properly closed down our resources.
             break;
           }
-        } else {
+        } else 
+          {
+            // 一般都走这条逻辑了，实际上很简单就是socket的连接
           connectSocket(connectTimeout, readTimeout, call, eventListener);
         }
+        // https的建立
         establishProtocol(connectionSpecSelector, pingIntervalMillis, call, eventListener);
         eventListener.connectEnd(call, route.socketAddress(), route.proxy(), protocol);
         break;
@@ -233,18 +250,22 @@ public final class RealConnection extends Http2Connection.Listener implements Co
   }
 
   /** Does all the work necessary to build a full HTTP or HTTPS connection on a raw socket. */
+  //建立一个socket连接
   private void connectSocket(int connectTimeout, int readTimeout, Call call,
       EventListener eventListener) throws IOException {
     Proxy proxy = route.proxy();
     Address address = route.address();
-
+// 根据代理类型来选择socket类型，是代理还是直连
     rawSocket = proxy.type() == Proxy.Type.DIRECT || proxy.type() == Proxy.Type.HTTP
         ? address.socketFactory().createSocket()
         : new Socket(proxy);
 
     eventListener.connectStart(call, route.socketAddress(), proxy);
+    //设置读取时间
     rawSocket.setSoTimeout(readTimeout);
     try {
+      // 连接socket，之所以这样写是因为支持不同的平台
+      //里面实际上是  socket.connect(address, connectTimeout);
       Platform.get().connectSocket(rawSocket, route.socketAddress(), connectTimeout);
     } catch (ConnectException e) {
       ConnectException ce = new ConnectException("Failed to connect to " + route.socketAddress());
@@ -257,6 +278,7 @@ public final class RealConnection extends Http2Connection.Listener implements Co
     // https://github.com/square/okhttp/issues/3245
     // https://android-review.googlesource.com/#/c/271775/
     try {
+      // 得到输入／输出流 使用底层的Okio的读写流。
       source = Okio.buffer(Okio.source(rawSocket));
       sink = Okio.buffer(Okio.sink(rawSocket));
     } catch (NullPointerException npe) {

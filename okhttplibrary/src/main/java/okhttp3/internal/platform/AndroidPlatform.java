@@ -65,9 +65,11 @@ class AndroidPlatform extends Platform {
     this.setAlpnProtocols = setAlpnProtocols;
   }
 
+  //Android 平台的socket代理
   @Override public void connectSocket(Socket socket, InetSocketAddress address,
       int connectTimeout) throws IOException {
     try {
+      //最后还是调用了Socket的方法
       socket.connect(address, connectTimeout);
     } catch (AssertionError e) {
       if (Util.isAndroidGetsocknameError(e)) throw new IOException(e);

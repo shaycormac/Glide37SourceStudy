@@ -148,10 +148,11 @@ public final class RealInterceptorChain implements Interceptor.Chain {
     RealInterceptorChain next = new RealInterceptorChain(interceptors, streamAllocation, httpCodec,
         connection, index + 1, request, call, eventListener, connectTimeout, readTimeout,
         writeTimeout);
-    //todo (2) 取列表中位于 index 位置的拦截器。
+    //todo (2) 取列表中位于 index 位置的拦截器。（注意Interceptor interceptor 使用了多态，因为真正引用的对象只要是他的实现者即可。）
     Interceptor interceptor = interceptors.get(index);
     //todo (3) 调用它的 intercept 方法，并传入新创建的 RealInterceptorChain。
     //参照RetryAndFollowUpInterceptor的方法实现
+    //再次往下调责任链
     Response response = interceptor.intercept(next);
 
     // Confirm that the next interceptor made its required call to chain.proceed().

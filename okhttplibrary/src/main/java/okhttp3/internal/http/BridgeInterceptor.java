@@ -44,6 +44,7 @@ public final class BridgeInterceptor implements Interceptor {
     this.cookieJar = cookieJar;
   }
 
+  //执行这个拦截器，加点请求头的东西
   @Override public Response intercept(Chain chain) throws IOException {
     Request userRequest = chain.request();
     Request.Builder requestBuilder = userRequest.newBuilder();
@@ -90,6 +91,7 @@ public final class BridgeInterceptor implements Interceptor {
       requestBuilder.header("User-Agent", Version.userAgent());
     }
 
+    //再次回到RealInterceptorChain,然后里面再次调用CacheInterceptor
     Response networkResponse = chain.proceed(requestBuilder.build());
 
     HttpHeaders.receiveHeaders(cookieJar, userRequest.url(), networkResponse.headers());

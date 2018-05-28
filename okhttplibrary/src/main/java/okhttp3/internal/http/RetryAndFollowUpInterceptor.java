@@ -56,7 +56,7 @@ import static okhttp3.internal.http.StatusLine.HTTP_TEMP_REDIRECT;
 /**
  * This interceptor recovers from failures and follows redirects as necessary. It may throw an
  * {@link IOException} if the call was canceled.
- * todo  以这个拦截器为列
+ * todo  以这个拦截器为列，在没有自定义拦截器的情况下，先走这个拦截器
  */
 public final class RetryAndFollowUpInterceptor implements Interceptor {
   /**
@@ -131,22 +131,26 @@ public final class RetryAndFollowUpInterceptor implements Interceptor {
         //调用下一个拦截器。
         //在整个递归调用过程中，如果有任意一个Interceptor的intercept方法返回了而没有调用proceed方法，
         // 那么整个调用将会结束，排在它之后的Interceptor将不会被执行
+        //不出意外的话，开始调用下一个责任链上的东西，再到RealInterceptor中proceed,然后再到BridgeInterceptor,
         response = realChain.proceed(request, streamAllocation, null, null);
         releaseConnection = false;
-      } catch (RouteException e) {
+      } catch (RouteException e)
+      {
         // The attempt to connect via a route failed. The request will not have been sent.
         if (!recover(e.getLastConnectException(), streamAllocation, false, request)) {
           throw e.getLastConnectException();
         }
         releaseConnection = false;
         continue;
-      } catch (IOException e) {
+      } catch (IOException e) 
+      {
         // An attempt to communicate with a server failed. The request may have been sent.
         boolean requestSendStarted = !(e instanceof ConnectionShutdownException);
         if (!recover(e, streamAllocation, requestSendStarted, request)) throw e;
         releaseConnection = false;
         continue;
-      } finally {
+      } finally 
+      {
         // We're throwing an unchecked exception. Release any resources.
         if (releaseConnection) {
           streamAllocation.streamFailed(null);

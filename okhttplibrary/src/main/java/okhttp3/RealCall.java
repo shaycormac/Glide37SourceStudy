@@ -108,6 +108,7 @@ final class RealCall implements Call {
     }
     captureCallStackTrace();
     eventListener.callStart(this);
+    //线程池里面执行，先放到线程池中，让调度去调度执行
     client.dispatcher().enqueue(new AsyncCall(responseCallback));
   }
 
@@ -132,7 +133,8 @@ final class RealCall implements Call {
     return retryAndFollowUpInterceptor.streamAllocation();
   }
 
-  final class AsyncCall extends NamedRunnable {
+  final class AsyncCall extends NamedRunnable 
+  {
     private final Callback responseCallback;
 
     AsyncCall(Callback responseCallback) {
@@ -155,6 +157,7 @@ final class RealCall implements Call {
     @Override protected void execute() {
       boolean signalledCallback = false;
       try {
+        //熟悉的责任链模式
         Response response = getResponseWithInterceptorChain();
         if (retryAndFollowUpInterceptor.isCanceled()) {
           signalledCallback = true;
@@ -213,10 +216,13 @@ final class RealCall implements Call {
     // 除此之外还需要注意第5个参数为0，这个对于下面的分析很重要，最后就是调用了RealInterceptorChain的proceed方法，
     // 其实参就是前面创建的Request对象
 
+    //创建出这个实现的拦截器责任链
+    //todo 注意这个RealInterceptorChain这个类，他只是相当于责任链中执行分发逻辑的类。通过proceed（）方法来实现
     Interceptor.Chain chain = new RealInterceptorChain(interceptors, null, null, null, 0,
         originalRequest, this, eventListener, client.connectTimeoutMillis(),
         client.readTimeoutMillis(), client.writeTimeoutMillis());
 //执行调用链的 proceed 方法。RealInterceptorChain的对象真正执行的地方，参见RealInterceptorChain的proceed()
+    //递归去执行下去，先从自定义的拦截器，然后是retryAndFollowUpInterceptor，BridgeInterceptor。。。最后执行CallServerInterceptor
     return chain.proceed(originalRequest);
   }
 }

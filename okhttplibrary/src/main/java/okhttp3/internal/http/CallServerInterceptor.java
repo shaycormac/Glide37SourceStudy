@@ -30,6 +30,7 @@ import okio.Okio;
 import okio.Sink;
 
 /** This is the last interceptor in the chain. It makes a network call to the server. */
+//这个类主要用来写入请求头，请求体，读取响应头，响应体
 public final class CallServerInterceptor implements Interceptor {
   private final boolean forWebSocket;
 
@@ -37,10 +38,11 @@ public final class CallServerInterceptor implements Interceptor {
     this.forWebSocket = forWebSocket;
   }
 
-  //CallServerInterceptor是最后一个Interceptor，与之前的拦截器不同，在它的intercept方法中 不会创建一个新的 RealInterceptorChain ，
+  //CallServerInterceptor是最后一个Interceptor，与之前的拦截器不同，在它的intercept方法中 并没有调用proceed了，
   // 而是直接返回了Response，使得整个递归调用一步步向上返回。
   @Override public Response intercept(Chain chain) throws IOException {
     RealInterceptorChain realChain = (RealInterceptorChain) chain;
+    //OkHttp的流程是完全独立的。同样读写数据月是交给相关的类来处理，就是HttpCodec(解码器)来处理
     HttpCodec httpCodec = realChain.httpStream();
     StreamAllocation streamAllocation = realChain.streamAllocation();
     RealConnection connection = (RealConnection) realChain.connection();
@@ -49,6 +51,7 @@ public final class CallServerInterceptor implements Interceptor {
     long sentRequestMillis = System.currentTimeMillis();
 
     realChain.eventListener().requestHeadersStart(realChain.call());
+    //写入请求头
     httpCodec.writeRequestHeaders(request);
     realChain.eventListener().requestHeadersEnd(realChain.call(), request);
 
@@ -62,8 +65,9 @@ public final class CallServerInterceptor implements Interceptor {
         realChain.eventListener().responseHeadersStart(realChain.call());
         responseBuilder = httpCodec.readResponseHeaders(true);
       }
-
-      if (responseBuilder == null) {
+      //写入请求体
+      if (responseBuilder == null)
+      {
         // Write the request body if the "Expect: 100-continue" expectation was met.
         realChain.eventListener().requestBodyStart(realChain.call());
         long contentLength = request.body().contentLength();
@@ -84,7 +88,7 @@ public final class CallServerInterceptor implements Interceptor {
     }
 
     httpCodec.finishRequest();
-
+    //读取响应头
     if (responseBuilder == null) {
       realChain.eventListener().responseHeadersStart(realChain.call());
       responseBuilder = httpCodec.readResponseHeaders(false);
@@ -96,7 +100,7 @@ public final class CallServerInterceptor implements Interceptor {
         .sentRequestAtMillis(sentRequestMillis)
         .receivedResponseAtMillis(System.currentTimeMillis())
         .build();
-
+//读取响应体
     int code = response.code();
     if (code == 100) {
       // server sent a 100-continue even though we did not request one.

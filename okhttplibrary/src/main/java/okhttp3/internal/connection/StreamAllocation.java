@@ -111,6 +111,7 @@ public final class StreamAllocation {
     boolean connectionRetryEnabled = client.retryOnConnectionFailure();
 
     try {
+      //寻找一个健康的链接
       RealConnection resultConnection = findHealthyConnection(connectTimeout, readTimeout,
           writeTimeout, pingIntervalMillis, connectionRetryEnabled, doExtensiveHealthChecks);
       HttpCodec resultCodec = resultConnection.newCodec(client, chain, this);
@@ -131,6 +132,7 @@ public final class StreamAllocation {
   private RealConnection findHealthyConnection(int connectTimeout, int readTimeout,
       int writeTimeout, int pingIntervalMillis, boolean connectionRetryEnabled,
       boolean doExtensiveHealthChecks) throws IOException {
+    //通过一个while(true)死循环不断去调用findConnection()方法去找RealConnection.
     while (true) {
       RealConnection candidate = findConnection(connectTimeout, readTimeout, writeTimeout,
           pingIntervalMillis, connectionRetryEnabled);
@@ -156,6 +158,12 @@ public final class StreamAllocation {
   /**
    * Returns a connection to host a new stream. This prefers the existing connection if it exists,
    * then the pool, finally building a new connection.
+   * 真正的寻找RealConnection
+   * 在findConnection()里面主要是通过3重判断：1如果有已知连接且可用，则直接返回，2如果在连接池有对应address
+   * 的连接，则返回，3切换路由再在连接池里面找下，如果有则返回，如果上述三个条件都没有满足，
+   * 则直接new一个RealConnection。然后开始握手，握手结束后，把连接加入连接池，如果在连接池有重复连接，
+   * 和合并连接
+   
    */
   private RealConnection findConnection(int connectTimeout, int readTimeout, int writeTimeout,
       int pingIntervalMillis, boolean connectionRetryEnabled) throws IOException {
@@ -202,6 +210,7 @@ public final class StreamAllocation {
     if (foundPooledConnection) {
       eventListener.connectionAcquired(call, result);
     }
+    //todo  条件1如果有已知连接且可用，则直接返回
     if (result != null) {
       // If we found an already-allocated or pooled connection, we're done.
       return result;
@@ -248,14 +257,17 @@ public final class StreamAllocation {
     }
 
     // If we found a pooled connection on the 2nd time around, we're done.
+    //todo 条件2 如果在连接池有对应address的连接，则返回
     if (foundPooledConnection) {
       eventListener.connectionAcquired(call, result);
       return result;
     }
 
+    //三次握手
     // Do TCP + TLS handshakes. This is a blocking operation.
     result.connect(connectTimeout, readTimeout, writeTimeout, pingIntervalMillis,
         connectionRetryEnabled, call, eventListener);
+    //计入数据库
     routeDatabase().connected(result.route());
 
     Socket socket = null;
@@ -263,10 +275,12 @@ public final class StreamAllocation {
       reportedAcquired = true;
 
       // Pool the connection.
+      //加入连接池
       Internal.instance.put(connectionPool, result);
 
       // If another multiplexed connection to the same address was created concurrently, then
       // release this connection and acquire that one.
+      // 如果是多路复用，则合并
       if (result.isMultiplexed()) {
         socket = Internal.instance.deduplicate(connectionPool, address, this);
         result = connection;
